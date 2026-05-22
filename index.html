@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MetalLens — Filtered commodities × AI intelligence. Gold, silver, oil signals daily.">
+<title>MetalLens — Commodities × AI Intelligence</title>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2184467660826262" crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay hidden" id="auth-modal">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="CL.auth.closeLoginModal()">×</button>
+    <h2>Sign in to MetalLens</h2>
+    <p>Enter your email — we'll send a magic link. No password needed.</p>
+    <input type="email" id="modal-email" placeholder="you@example.com">
+    <button class="btn btn-primary" style="width:100%" onclick="handleModalLogin()">Send Magic Link</button>
+    <p class="msg" id="modal-msg"></p>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <span class="nav-logo">METAL<span>LENS</span></span>
+  <div class="nav-filters">
+    <button class="nav-filter active" data-cat="all"    onclick="setCategory('all')">ALL</button>
+    <button class="nav-filter" data-cat="gold"          onclick="setCategory('gold')">GOLD</button>
+    <button class="nav-filter" data-cat="silver"        onclick="setCategory('silver')">SILVER</button>
+    <button class="nav-filter" data-cat="oil"           onclick="setCategory('oil')">OIL</button>
+    <button class="nav-filter" data-cat="macro"         onclick="setCategory('macro')">MACRO</button>
+    <button class="nav-filter" data-cat="ai"            onclick="setCategory('ai')">AI</button>
+  </div>
+  <div class="nav-actions">
+    <span class="badge badge-cat-gold hidden" id="nav-pro-label">PRO</span>
+    <a href="https://lens.qizh.space" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">CRYPTO ↗</a>
+    <a href="https://stocks.qizh.space" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">STOCKS ↗</a>
+    <button class="btn btn-ghost btn-sm" id="lang-toggle" onclick="toggleLang()">EN</button>
+    <button class="btn btn-ghost btn-sm" id="nav-login-btn"  onclick="CL.auth.openLoginModal()" data-i18n="signIn">Sign In</button>
+    <button class="btn btn-ghost btn-sm hidden" id="nav-logout-btn" onclick="CL.auth.signOut()" data-i18n="signOut">Sign Out</button>
+    <a href="subscribe.html" class="btn btn-primary btn-sm">Subscribe</a>
+  </div>
+</nav>
+
+<!-- MARKET PULSE HERO -->
+<div class="pulse-hero" id="pulse-hero">
+  <div class="pulse-hero-glow"></div>
+  <div class="container">
+    <div class="pulse-hero-grid">
+      <div class="pulse-hero-inner" id="pulse-card">
+        <div class="card skeleton" style="height:200px"></div>
+      </div>
+      <div class="btc-panel">
+        <div class="btc-meta">
+          <span class="live-ring" id="live-ring"></span>
+          <span id="live-status">XAU · FINNHUB</span>
+        </div>
+        <div class="btc-price-row">
+          <span class="btc-big" id="gold-price">—</span>
+          <span class="btc-chg" id="gold-chg"></span>
+        </div>
+        <div class="btc-range" id="gold-range"></div>
+        <div id="gold-chart"></div>
+        <div id="fear-greed-block" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- TODAY'S TOP -->
+  <div class="top-section">
+    <div class="section-label" data-i18n="todayTop">Today's Top Signal</div>
+    <div class="top-grid" id="top-grid">
+      <div class="card skeleton" style="height:160px"></div>
+      <div class="card skeleton" style="height:160px"></div>
+      <div class="card skeleton" style="height:160px"></div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="page-grid">
+    <main>
+      <div class="feed" id="feed">
+        <div class="card skeleton" style="height:140px"></div>
+        <div class="card skeleton" style="height:140px"></div>
+        <div class="card skeleton" style="height:140px"></div>
+      </div>
+      <div class="load-more">
+        <button id="load-more-btn" onclick="loadFeed()" data-i18n="loadMore">Load more</button>
+      </div>
+    </main>
+
+    <aside class="sidebar">
+      <div class="sidebar-block" id="price-snapshot-block" style="display:none"></div>
+
+      <div class="sidebar-block sidebar-subscribe">
+        <div class="sidebar-title" data-i18n="weeklySignal">Free Weekly Signal</div>
+        <p data-i18n="weeklyDesc">Top 10 stories every Monday. No spam.</p>
+        <input type="email" id="sidebar-email" placeholder="your@email.com">
+        <button class="btn btn-primary" style="width:100%" onclick="sidebarSubscribe()" data-i18n="subFree">Subscribe Free</button>
+        <p class="msg" id="sidebar-msg"></p>
+      </div>
+
+      <div class="sidebar-block">
+        <div class="sidebar-title" data-i18n="trendingTags">Trending Tags</div>
+        <div class="sidebar-tags" id="sidebar-tags"></div>
+      </div>
+
+      <div class="sidebar-block affiliate-block">
+        <span class="aff-label" data-i18n="sponsored">Sponsored</span>
+        <p>Trade gold & commodities on <a href="https://accounts.binance.com/register?ref=YOUR_REF" target="_blank" rel="noopener" onclick="CL.affiliate.track('binance', null)">Binance</a> — earn rebates on every trade.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<footer class="footer">
+  <p class="footer-disclaimer">MetalLens aggregates information from third-party sources for informational purposes only. Nothing on this site constitutes financial or investment advice. Commodity investments carry significant risk.</p>
+  <div class="footer-links">
+    <a href="index.html">Home</a>
+    <a href="subscribe.html">Subscribe</a>
+    <a href="about.html">About</a>
+    <a href="privacy.html">Privacy Policy</a>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/affiliate.js"></script>
+<script>
+async function init() {
+  await CL.auth.initAuth();
+  applyLangToDOM();
+  await Promise.all([
+    loadTodaysTop(),
+    loadMarketPulse(),
+    loadSidebarTags(),
+    loadHourlyChart(),
+    loadPriceSnapshot(),
+  ]);
+  initGoldPricePoll();
+  await loadFeed(true);
+}
+
+async function handleModalLogin() {
+  const email = document.getElementById('modal-email').value.trim();
+  const msg = document.getElementById('modal-msg');
+  const error = await CL.auth.sendMagicLink(email);
+  if (error) { msg.className = 'msg msg-error'; msg.textContent = error.message; }
+  else { msg.className = 'msg msg-success'; msg.textContent = 'Check your email for the magic link!'; }
+}
+
+async function sidebarSubscribe() {
+  const email = document.getElementById('sidebar-email').value.trim();
+  const msg = document.getElementById('sidebar-msg');
+  const { error } = await handleSubscribe(email);
+  if (error) { msg.className = 'msg msg-error'; msg.textContent = 'Already subscribed or invalid email.'; }
+  else { msg.className = 'msg msg-success'; msg.textContent = 'Subscribed! Check your inbox Monday.'; }
+}
+
+document.addEventListener('authChanged', () => { loadFeed(true); loadTodaysTop(); });
+
+init();
+</script>
+</body>
+</html>
