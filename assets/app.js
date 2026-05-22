@@ -459,3 +459,74 @@ function initGoldPricePoll() {
 
 window.loadHourlyChart = loadHourlyChart;
 window.initGoldPricePoll = initGoldPricePoll;
+
+/* ── METALS PRICE SNAPSHOT ── */
+const SNAPSHOT_SYMS = ['OANDA:XAU_USD','OANDA:XAG_USD','OANDA:XCU_USD','OANDA:XPT_USD','OANDA:BCO_USD'];
+const SNAPSHOT_DISPLAY = {
+  'OANDA:XAU_USD': 'XAU', 'OANDA:XAG_USD': 'XAG',
+  'OANDA:XCU_USD': 'XCU', 'OANDA:XPT_USD': 'XPT', 'OANDA:BCO_USD': 'OIL'
+};
+const SNAPSHOT_META = {
+  'OANDA:XAU_USD': 'Gold', 'OANDA:XAG_USD': 'Silver',
+  'OANDA:XCU_USD': 'Copper', 'OANDA:XPT_USD': 'Platinum', 'OANDA:BCO_USD': 'Brent'
+};
+let _priceSnapshotTimer = null;
+
+function _sparkPoints(closes) {
+  if (!closes?.length) return '';
+  const min = Math.min(...closes), max = Math.max(...closes);
+  const range = max - min || 1;
+  return closes.map((p, i) => {
+    const x = (i / (closes.length - 1)) * 50;
+    const y = 18 - ((p - min) / range) * 16;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+}
+
+async function loadPriceSnapshot() {
+  const el = document.getElementById('price-snapshot-block');
+  if (!el) return;
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const from = now - 3600;
+
+    const [quotesArr, candlesArr] = await Promise.all([
+      Promise.all(SNAPSHOT_SYMS.map(s =>
+        fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(s)}&token=${FINNHUB_API_KEY}`).then(r => r.json())
+      )),
+      Promise.all(SNAPSHOT_SYMS.map(s =>
+        fetch(`https://finnhub.io/api/v1/forex/candle?symbol=${encodeURIComponent(s)}&resolution=5&from=${from}&to=${now}&token=${FINNHUB_API_KEY}`)
+          .then(r => r.json()).then(d => d.s === 'ok' ? d.c : [])
+      ))
+    ]);
+
+    const rows = SNAPSHOT_SYMS.map((sym, i) => {
+      const q   = quotesArr[i] || {};
+      const pts = _sparkPoints(candlesArr[i]);
+      const pct = q.dp ?? 0;
+      const up  = pct >= 0;
+      const color = up ? '#c9a84c' : '#ff4757';
+      const sign  = up ? '+' : '';
+      return `<div class="price-row">
+        <div>
+          <div class="pr-sym">${SNAPSHOT_DISPLAY[sym]}</div>
+          <div class="pr-name">${SNAPSHOT_META[sym]}</div>
+        </div>
+        <svg class="pr-spark" viewBox="0 0 52 20" preserveAspectRatio="none">
+          ${pts ? `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/>` : ''}
+        </svg>
+        <div>
+          <div class="pr-price">$${(q.c ?? 0).toFixed(2)}</div>
+          <div class="pr-chg" style="color:${color}">${sign}${pct.toFixed(2)}%</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    el.innerHTML = `<div class="sidebar-title">${t('priceSnapshot')} <span class="live-badge-sm">~15s</span></div>${rows}`;
+    el.style.display = '';
+  } catch { el.style.display = 'none'; }
+  if (_priceSnapshotTimer) clearTimeout(_priceSnapshotTimer);
+  _priceSnapshotTimer = setTimeout(loadPriceSnapshot, 30000);
+}
+
+window.loadPriceSnapshot = loadPriceSnapshot;
