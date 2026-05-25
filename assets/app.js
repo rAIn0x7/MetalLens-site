@@ -25,7 +25,7 @@ const STRINGS = {
     histLabel: '14-DAY HISTORY',
     today: 'Today',
     sentiment: { bullish: 'BULLISH', bearish: 'BEARISH', neutral: 'NEUTRAL', mixed: 'MIXED' },
-    liveLabel: () => 'GLD · FINNHUB · ~15s',
+    liveLabel: () => 'XAU/USD · SPOT',
     priceSnapshot: 'Metals',
   },
   zh: {
@@ -46,7 +46,7 @@ const STRINGS = {
     histLabel: '14天历史',
     today: '今日',
     sentiment: { bullish: '看多', bearish: '看空', neutral: '中性', mixed: '混合' },
-    liveLabel: () => 'GLD · FINNHUB · ~15秒',
+    liveLabel: () => 'XAU/USD · 现货',
     priceSnapshot: '金属',
   }
 };
@@ -452,22 +452,49 @@ function setLiveStatus() {
 function initGoldPricePoll() {
   setLiveStatus();
   loadHourlyChart();
-  async function poll() {
+
+  async function fetchSpot() {
+    try {
+      const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xau.json');
+      const d = await r.json();
+      const ozUsd = d?.xau?.usd;
+      if (!ozUsd) return;
+      const priceEl = document.getElementById('gold-price');
+      if (priceEl) {
+        if (_lastGoldPrice !== null) {
+          priceEl.style.color = ozUsd > _lastGoldPrice ? '#c9a84c' : ozUsd < _lastGoldPrice ? '#ff4757' : '';
+          setTimeout(() => { if (priceEl) priceEl.style.color = ''; }, 800);
+        }
+        _lastGoldPrice = ozUsd;
+        priceEl.textContent = '$' + ozUsd.toFixed(0);
+      }
+      _addGoldHistory(ozUsd);
+      loadHourlyChart();
+    } catch (e) { console.warn('[XAU spot]', e.message); }
+  }
+
+  async function pollChange() {
     try {
       const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=GLD&token=${FINNHUB_API_KEY}`);
       const d = await r.json();
-      if (d.c) {
-        updateGoldPrice(d.c, d.dp);
-        _addGoldHistory(d.c);
-        loadHourlyChart();
+      if (d.dp != null) {
+        const chgEl = document.getElementById('gold-chg');
+        if (chgEl) {
+          const sign = d.dp >= 0 ? '▲ +' : '▼ ';
+          chgEl.textContent = sign + Math.abs(d.dp).toFixed(2) + '%';
+          chgEl.style.color = d.dp >= 0 ? '#c9a84c' : '#ff4757';
+        }
         const rangeEl = document.getElementById('gold-range');
         if (rangeEl && d.h && d.l)
-          rangeEl.textContent = `Day Low: $${d.l.toFixed(2)} · High: $${d.h.toFixed(2)} · Prev: $${d.pc?.toFixed(2) ?? '—'}`;
+          rangeEl.textContent = `GLD Day Low $${d.l.toFixed(2)} · High $${d.h.toFixed(2)}`;
       }
     } catch (e) { console.warn('[GLD poll]', e.message); }
   }
-  poll();
-  setInterval(poll, 15000);
+
+  fetchSpot();
+  pollChange();
+  setInterval(fetchSpot, 3600000);
+  setInterval(pollChange, 15000);
 }
 
 window.loadHourlyChart = loadHourlyChart;
@@ -478,6 +505,30 @@ const SNAPSHOT_SYMS = ['GLD','SLV','USO','PPLT','CPER'];
 const SNAPSHOT_DISPLAY = { 'GLD':'XAU', 'SLV':'XAG', 'USO':'OIL', 'PPLT':'XPT', 'CPER':'XCU' };
 const SNAPSHOT_META    = { 'GLD':'Gold', 'SLV':'Silver', 'USO':'Brent', 'PPLT':'Platinum', 'CPER':'Copper' };
 let _priceSnapshotTimer = null;
+const _SNAP_HIST_KEY = 'ml_snap_hist';
+const _SNAP_HIST_MAX = 30;
+
+function _addSnapHistory(sym, price) {
+  try {
+    const all = JSON.parse(localStorage.getItem(_SNAP_HIST_KEY) || '{}');
+    if (!all[sym]) all[sym] = [];
+    all[sym].push(price);
+    if (all[sym].length > _SNAP_HIST_MAX) all[sym].splice(0, all[sym].length - _SNAP_HIST_MAX);
+    localStorage.setItem(_SNAP_HIST_KEY, JSON.stringify(all));
+    return all[sym];
+  } catch { return [price]; }
+}
+
+function _sparkPoints(prices) {
+  if (!prices?.length || prices.length < 2) return '';
+  const min = Math.min(...prices), max = Math.max(...prices);
+  const range = max - min || prices[0] * 0.001;
+  return prices.map((p, i) => {
+    const x = (i / (prices.length - 1)) * 50;
+    const y = 18 - ((p - min) / range) * 16;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+}
 
 async function loadPriceSnapshot() {
   const el = document.getElementById('price-snapshot-block');
@@ -489,10 +540,14 @@ async function loadPriceSnapshot() {
       )
     );
 
+    const snapHist = JSON.parse(localStorage.getItem(_SNAP_HIST_KEY) || '{}');
     const rows = SNAPSHOT_SYMS.map((sym, i) => {
       const q    = quotesArr[i] || {};
-      const pct  = q.dp ?? 0;
-      const up   = pct >= 0;
+      if (q.c) _addSnapHistory(sym, q.c);
+      const hist  = snapHist[sym] || [];
+      const pts   = _sparkPoints(hist);
+      const pct   = q.dp ?? 0;
+      const up    = pct >= 0;
       const color = up ? '#c9a84c' : '#ff4757';
       const sign  = up ? '+' : '';
       return `<div class="price-row">
@@ -500,7 +555,9 @@ async function loadPriceSnapshot() {
           <div class="pr-sym">${SNAPSHOT_DISPLAY[sym]}</div>
           <div class="pr-name">${SNAPSHOT_META[sym]}</div>
         </div>
-        <div style="flex:1"></div>
+        <svg class="pr-spark" viewBox="0 0 52 20" preserveAspectRatio="none">
+          ${pts ? `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/>` : ''}
+        </svg>
         <div>
           <div class="pr-price">$${(q.c ?? 0).toFixed(2)}</div>
           <div class="pr-chg" style="color:${color}">${sign}${pct.toFixed(2)}%</div>
