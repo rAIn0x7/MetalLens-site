@@ -25,7 +25,7 @@ const STRINGS = {
     histLabel: '14-DAY HISTORY',
     today: 'Today',
     sentiment: { bullish: 'BULLISH', bearish: 'BEARISH', neutral: 'NEUTRAL', mixed: 'MIXED' },
-    liveLabel: () => 'XAU · FINNHUB · ~15s',
+    liveLabel: () => 'GLD · FINNHUB · ~15s',
     priceSnapshot: 'Metals',
   },
   zh: {
@@ -46,7 +46,7 @@ const STRINGS = {
     histLabel: '14天历史',
     today: '今日',
     sentiment: { bullish: '看多', bearish: '看空', neutral: '中性', mixed: '混合' },
-    liveLabel: () => 'XAU · FINNHUB · ~15秒',
+    liveLabel: () => 'GLD · FINNHUB · ~15秒',
     priceSnapshot: '金属',
   }
 };
@@ -376,17 +376,28 @@ function renderHourlyChart(closes) {
 </svg>`;
 }
 
+const _GOLD_HIST_KEY = 'ml_gold_hist';
+const _GOLD_HIST_MAX = 240; // 240 × 15s = 1 hour of data
+
+function _addGoldHistory(price) {
+  try {
+    const hist = JSON.parse(localStorage.getItem(_GOLD_HIST_KEY) || '[]');
+    hist.push(price);
+    if (hist.length > _GOLD_HIST_MAX) hist.splice(0, hist.length - _GOLD_HIST_MAX);
+    localStorage.setItem(_GOLD_HIST_KEY, JSON.stringify(hist));
+    return hist;
+  } catch { return [price]; }
+}
+
 async function loadHourlyChart() {
   const el = document.getElementById('gold-chart');
   if (!el) return;
   try {
-    const now  = Math.floor(Date.now() / 1000);
-    const from = now - 86400;
-    const url  = `https://finnhub.io/api/v1/forex/candle?symbol=OANDA:XAU_USD&resolution=60&from=${from}&to=${now}&token=${FINNHUB_API_KEY}`;
-    const r = await fetch(url);
-    const d = await r.json();
-    if (!d.c || d.s !== 'ok' || d.c.length < 2) return;
-
+    const hist = JSON.parse(localStorage.getItem(_GOLD_HIST_KEY) || '[]');
+    if (hist.length < 2) {
+      el.innerHTML = '<div style="height:88px;display:flex;align-items:center;justify-content:center;opacity:0.3;font-size:11px">Chart builds as data arrives…</div>';
+      return;
+    }
     const sb = window.CL.supabase;
     const { data: pulses } = await sb
       .from('metal_pulses')
@@ -402,13 +413,12 @@ async function loadHourlyChart() {
         return `<div class="sb-seg" style="background:${c};opacity:${op}"></div>`;
       }).join('') + '</div>' : '';
 
-    el.innerHTML = renderHourlyChart(d.c) + band +
-      `<div class="chart-foot"><span>24h ago</span><span style="color:rgba(255,255,255,0.1)">▓ sentiment</span><span>now</span></div>`;
+    const span = hist.length < 20 ? `${hist.length * 15}s` : hist.length < 240 ? `${Math.round(hist.length / 4)}m` : '1h';
+    el.innerHTML = renderHourlyChart(hist) + band +
+      `<div class="chart-foot"><span>${span} ago</span><span style="color:rgba(255,255,255,0.1)">▓ sentiment</span><span>now</span></div>`;
   } catch (e) {
     console.warn('[loadHourlyChart]', e.message);
   }
-  if (_hourlyChartTimer) clearTimeout(_hourlyChartTimer);
-  _hourlyChartTimer = setTimeout(loadHourlyChart, 30 * 60 * 1000);
 }
 
 /* ── GOLD PRICE POLL (REST only — forex WS requires paid Finnhub plan) ── */
@@ -441,17 +451,20 @@ function setLiveStatus() {
 
 function initGoldPricePoll() {
   setLiveStatus();
+  loadHourlyChart();
   async function poll() {
     try {
-      const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token=${FINNHUB_API_KEY}`);
+      const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=GLD&token=${FINNHUB_API_KEY}`);
       const d = await r.json();
       if (d.c) {
         updateGoldPrice(d.c, d.dp);
+        _addGoldHistory(d.c);
+        loadHourlyChart();
         const rangeEl = document.getElementById('gold-range');
         if (rangeEl && d.h && d.l)
-          rangeEl.textContent = `Day 低: $${d.l.toFixed(2)} · 高: $${d.h.toFixed(2)} · Prev: $${d.pc?.toFixed(2) ?? '—'}`;
+          rangeEl.textContent = `Day Low: $${d.l.toFixed(2)} · High: $${d.h.toFixed(2)} · Prev: $${d.pc?.toFixed(2) ?? '—'}`;
       }
-    } catch (e) { console.warn('[XAU poll]', e.message); }
+    } catch (e) { console.warn('[GLD poll]', e.message); }
   }
   poll();
   setInterval(poll, 15000);
@@ -460,51 +473,26 @@ function initGoldPricePoll() {
 window.loadHourlyChart = loadHourlyChart;
 window.initGoldPricePoll = initGoldPricePoll;
 
-/* ── METALS PRICE SNAPSHOT ── */
-const SNAPSHOT_SYMS = ['OANDA:XAU_USD','OANDA:XAG_USD','OANDA:XCU_USD','OANDA:XPT_USD','OANDA:BCO_USD'];
-const SNAPSHOT_DISPLAY = {
-  'OANDA:XAU_USD': 'XAU', 'OANDA:XAG_USD': 'XAG',
-  'OANDA:XCU_USD': 'XCU', 'OANDA:XPT_USD': 'XPT', 'OANDA:BCO_USD': 'OIL'
-};
-const SNAPSHOT_META = {
-  'OANDA:XAU_USD': 'Gold', 'OANDA:XAG_USD': 'Silver',
-  'OANDA:XCU_USD': 'Copper', 'OANDA:XPT_USD': 'Platinum', 'OANDA:BCO_USD': 'Brent'
-};
+/* ── METALS PRICE SNAPSHOT (ETF proxies — Finnhub free tier) ── */
+const SNAPSHOT_SYMS = ['GLD','SLV','USO','PPLT','CPER'];
+const SNAPSHOT_DISPLAY = { 'GLD':'XAU', 'SLV':'XAG', 'USO':'OIL', 'PPLT':'XPT', 'CPER':'XCU' };
+const SNAPSHOT_META    = { 'GLD':'Gold', 'SLV':'Silver', 'USO':'Brent', 'PPLT':'Platinum', 'CPER':'Copper' };
 let _priceSnapshotTimer = null;
-
-function _sparkPoints(closes) {
-  if (!closes?.length) return '';
-  const min = Math.min(...closes), max = Math.max(...closes);
-  const range = max - min || 1;
-  return closes.map((p, i) => {
-    const x = (i / (closes.length - 1)) * 50;
-    const y = 18 - ((p - min) / range) * 16;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
-}
 
 async function loadPriceSnapshot() {
   const el = document.getElementById('price-snapshot-block');
   if (!el) return;
   try {
-    const now = Math.floor(Date.now() / 1000);
-    const from = now - 3600;
-
-    const [quotesArr, candlesArr] = await Promise.all([
-      Promise.all(SNAPSHOT_SYMS.map(s =>
-        fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(s)}&token=${FINNHUB_API_KEY}`).then(r => r.json())
-      )),
-      Promise.all(SNAPSHOT_SYMS.map(s =>
-        fetch(`https://finnhub.io/api/v1/forex/candle?symbol=${encodeURIComponent(s)}&resolution=5&from=${from}&to=${now}&token=${FINNHUB_API_KEY}`)
-          .then(r => r.json()).then(d => d.s === 'ok' ? d.c : [])
-      ))
-    ]);
+    const quotesArr = await Promise.all(
+      SNAPSHOT_SYMS.map(s =>
+        fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${FINNHUB_API_KEY}`).then(r => r.json())
+      )
+    );
 
     const rows = SNAPSHOT_SYMS.map((sym, i) => {
-      const q   = quotesArr[i] || {};
-      const pts = _sparkPoints(candlesArr[i]);
-      const pct = q.dp ?? 0;
-      const up  = pct >= 0;
+      const q    = quotesArr[i] || {};
+      const pct  = q.dp ?? 0;
+      const up   = pct >= 0;
       const color = up ? '#c9a84c' : '#ff4757';
       const sign  = up ? '+' : '';
       return `<div class="price-row">
@@ -512,9 +500,7 @@ async function loadPriceSnapshot() {
           <div class="pr-sym">${SNAPSHOT_DISPLAY[sym]}</div>
           <div class="pr-name">${SNAPSHOT_META[sym]}</div>
         </div>
-        <svg class="pr-spark" viewBox="0 0 52 20" preserveAspectRatio="none">
-          ${pts ? `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/>` : ''}
-        </svg>
+        <div style="flex:1"></div>
         <div>
           <div class="pr-price">$${(q.c ?? 0).toFixed(2)}</div>
           <div class="pr-chg" style="color:${color}">${sign}${pct.toFixed(2)}%</div>
@@ -522,7 +508,7 @@ async function loadPriceSnapshot() {
       </div>`;
     }).join('');
 
-    el.innerHTML = `<div class="sidebar-title">${t('priceSnapshot')} <span class="live-badge-sm">~15s</span></div>${rows}`;
+    el.innerHTML = `<div class="sidebar-title">${t('priceSnapshot')} <span class="live-badge-sm">~30s</span></div>${rows}`;
     el.style.display = '';
   } catch { el.style.display = 'none'; }
   if (_priceSnapshotTimer) clearTimeout(_priceSnapshotTimer);
