@@ -111,6 +111,9 @@ a { color: inherit; text-decoration: none; }
 
 .btn-sm { padding: 0.25rem 0.65rem; font-size: 0.75rem; }
 
+.nav-brand-link { color: #c9a84c !important; border-color: rgba(201,168,76,.3) !important; }
+.nav-brand-link:hover { border-color: #c9a84c !important; background: rgba(201,168,76,.08) !important; }
+
 .hidden { display: none !important; }
 
 /* ── LAYOUT ── */
