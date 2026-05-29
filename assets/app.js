@@ -446,7 +446,7 @@ function setLiveStatus() {
   const ring  = document.getElementById('live-ring');
   const label = document.getElementById('live-status');
   if (ring)  ring.style.background = 'rgba(201,168,76,0.6)';
-  if (label) label.textContent = t('liveLabel')();
+  if (label) label.textContent = t('liveLabel');
 }
 
 function initGoldPricePoll() {
@@ -458,7 +458,10 @@ function initGoldPricePoll() {
       const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xau.json');
       const d = await r.json();
       const ozUsd = d?.xau?.usd;
+      const ozCny = d?.xau?.cny; // CNY per troy oz
       if (!ozUsd) return;
+
+      // USD price
       const priceEl = document.getElementById('gold-price');
       if (priceEl) {
         if (_lastGoldPrice !== null) {
@@ -468,6 +471,16 @@ function initGoldPricePoll() {
         _lastGoldPrice = ozUsd;
         priceEl.textContent = '$' + ozUsd.toFixed(0);
       }
+
+      // 国内参考价：CNY/g（1 troy oz = 31.1035g）
+      if (ozCny) {
+        const cnyPerGram = ozCny / 31.1035;
+        const cnyEl  = document.getElementById('cny-price');
+        const cnyRow = document.getElementById('cny-price-row');
+        if (cnyEl)  cnyEl.textContent = '¥' + cnyPerGram.toFixed(2) + '/g';
+        if (cnyRow) cnyRow.style.display = '';
+      }
+
       _addGoldHistory(ozUsd);
       loadHourlyChart();
     } catch (e) { console.warn('[XAU spot]', e.message); }
@@ -486,14 +499,14 @@ function initGoldPricePoll() {
         }
         const rangeEl = document.getElementById('gold-range');
         if (rangeEl && d.h && d.l)
-          rangeEl.textContent = `GLD Day Low $${d.l.toFixed(2)} · High $${d.h.toFixed(2)}`;
+          rangeEl.textContent = `GLD Low $${d.l.toFixed(2)} · High $${d.h.toFixed(2)}`;
       }
     } catch (e) { console.warn('[GLD poll]', e.message); }
   }
 
   fetchSpot();
   pollChange();
-  setInterval(fetchSpot, 3600000);
+  setInterval(fetchSpot, 15000);  // fix: was 3600000 (1hr), chart needs 15s ticks to build
   setInterval(pollChange, 15000);
 }
 
