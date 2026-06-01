@@ -1228,3 +1228,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   .nav-filters::-webkit-scrollbar{display:none}
   .nav-filter{flex:0 0 auto; white-space:nowrap}
 }
+
+/* ── FEED EMPTY / ERROR STATE ── */
+.feed-error,.feed-empty{padding:2.2rem 1.5rem;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:.85rem;line-height:1.8;border:1px dashed var(--border);border-radius:var(--radius)}
+.feed-error button{margin-left:.6rem;background:none;border:1px solid var(--cyan);color:var(--cyan);padding:.35rem .9rem;border-radius:5px;cursor:pointer;font-family:inherit;font-size:.8rem;transition:all .15s}
+.feed-error button:hover{background:var(--cyan);color:#000}

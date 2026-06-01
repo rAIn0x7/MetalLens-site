@@ -183,20 +183,21 @@ async function loadFeed(reset) {
   if (currentTag) q = q.contains('tags', [currentTag]);
   q = q.range(currentOffset, currentOffset + PAGE_SIZE - 1);
 
-  let data;
-  try {
-    const res = await q;
-    data = res.data;
-  } catch (e) {
-    isLoading = false;
-    return;
-  }
+  let data, err;
+  try { const res = await q; data = res.data; err = res.error; }
+  catch (e) { err = e; }
   isLoading = false;
 
-  if (!data?.length) { hasMore = false; _hideLoadMore(); return; }
-  if (data.length < PAGE_SIZE) { hasMore = false; _hideLoadMore(); }
-
   const container = document.getElementById('feed');
+  if (err) {
+    if (reset && container) container.innerHTML = '<div class="feed-error">加载失败 / Couldn’t load <button onclick="loadFeed(true)">重试 Retry</button></div>';
+    _hideLoadMore(); return;
+  }
+  if (!data?.length) {
+    if (reset && container) container.innerHTML = '<div class="feed-empty">暂无内容 / Nothing here yet</div>';
+    hasMore = false; _hideLoadMore(); return;
+  }
+  if (data.length < PAGE_SIZE) { hasMore = false; _hideLoadMore(); }
   if (!container) return;
   if (reset) container.innerHTML = '';
   container.insertAdjacentHTML('beforeend', data.map(a => renderCard(a, false)).join(''));
