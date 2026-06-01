@@ -1233,3 +1233,27 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .feed-error,.feed-empty{padding:2.2rem 1.5rem;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:.85rem;line-height:1.8;border:1px dashed var(--border);border-radius:var(--radius)}
 .feed-error button{margin-left:.6rem;background:none;border:1px solid var(--cyan);color:var(--cyan);padding:.35rem .9rem;border-radius:5px;cursor:pointer;font-family:inherit;font-size:.8rem;transition:all .15s}
 .feed-error button:hover{background:var(--cyan);color:#000}
+
+
+/* ── DAILY BRIEF (compact headline list · hover-expand) ── */
+.brief-section{padding:1.25rem 0 .25rem}
+.brief-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:.7rem}
+.brief-kicker{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.18em;color:var(--cyan);text-transform:uppercase}
+.brief-date{font-family:var(--font-mono);font-size:.68rem;color:var(--muted)}
+.brief{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:2rem;background:var(--bg-card)}
+.brief-item{display:grid;grid-template-columns:auto 1fr;gap:.8rem;padding:.72rem 1rem;border-bottom:1px solid var(--border);position:relative;transition:background .15s}
+.brief-item:last-child{border-bottom:none}
+.brief-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--cyan);transform:scaleY(0);transform-origin:top;transition:transform .2s}
+.brief-item:hover{background:var(--bg-hover)}
+.brief-item:hover::before{transform:scaleY(1)}
+.brief-num{font-family:var(--font-mono);font-size:.74rem;font-weight:700;color:var(--cyan);opacity:.5;padding-top:.05rem}
+.brief-body{min-width:0}
+.brief-row{display:flex;align-items:baseline;gap:.8rem}
+.brief-h{flex:1;min-width:0;font-size:.9rem;font-weight:600;line-height:1.45;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brief-tag{flex-shrink:0;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.brief-sum{font-size:.78rem;line-height:1.55;color:var(--muted);max-height:0;opacity:0;overflow:hidden;transition:max-height .25s ease,opacity .2s ease,margin-top .25s ease}
+.brief-src{color:var(--cyan);white-space:nowrap}
+.brief-src:hover{text-decoration:underline}
+@media (hover:hover){ .brief-item:hover .brief-sum{max-height:80px;opacity:1;margin-top:.4rem} }
+@media (hover:none){ .brief-sum{max-height:none;opacity:1;margin-top:.35rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical} }
+.feed-label{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-bottom:1rem;padding-bottom:.6rem;border-bottom:1px solid var(--border)}

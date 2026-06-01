@@ -153,21 +153,35 @@ function renderCard(article, isTop) {
     </div>`;
 }
 
+function renderBriefItem(a, i) {
+  const sum = escapeHtml(getLang() === 'zh' ? (a.summary_zh || a.summary || '') : (a.summary || ''));
+  const url = escapeHtml(a.original_url || '#');
+  const src = a.original_url
+    ? `<a class="brief-src" href="${url}" target="_blank" rel="noopener">${escapeHtml(a.source_name || 'source')} →</a>` : '';
+  return `<div class="brief-item">
+    <span class="brief-num">${String(i + 1).padStart(2, '0')}</span>
+    <div class="brief-body">
+      <div class="brief-row"><span class="brief-h">${escapeHtml(a.title)}</span><span class="brief-tag">${escapeHtml(a.category || 'gold')} ●${escapeHtml(String(a.importance_score ?? 7))}</span></div>
+      <div class="brief-sum">${sum} ${src}</div>
+    </div>
+  </div>`;
+}
+
 async function loadTodaysTop() {
   const sb = window.CL.supabase;
-  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-  const { data } = await sb
-    .from('metal_articles')
-    .select('*')
-    .gte('published_at', since)
-    .gte('importance_score', 8)
-    .order('importance_score', { ascending: false })
-    .limit(5);
-
+  const since = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+  let { data } = await sb.from('metal_articles').select('*')
+    .gte('published_at', since).order('importance_score', { ascending: false }).limit(4);
+  if (!data?.length) {
+    ({ data } = await sb.from('metal_articles').select('*').order('importance_score', { ascending: false }).limit(4));
+  }
+  const dateEl = document.getElementById('brief-date');
+  if (dateEl) dateEl.textContent = new Date().toLocaleDateString(
+    getLang() === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   const container = document.getElementById('top-grid');
   if (!container) return;
-  if (!data?.length) { container.closest('.top-section')?.classList.add('hidden'); return; }
-  container.innerHTML = data.map(a => renderCard(a, true)).join('');
+  if (!data?.length) { container.closest('.brief-section')?.classList.add('hidden'); return; }
+  container.innerHTML = data.map((a, i) => renderBriefItem(a, i)).join('');
 }
 
 async function loadFeed(reset) {
