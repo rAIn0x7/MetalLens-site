@@ -390,22 +390,29 @@ function _addGoldHistory(price) {
   } catch { return [price]; }
 }
 
+// Gold barely moves intraday → show a 30-day DAILY trend (cached once/day).
 async function loadHourlyChart() {
   const el = document.getElementById('gold-chart');
   if (!el) return;
   try {
-    const hist = JSON.parse(localStorage.getItem(_GOLD_HIST_KEY) || '[]');
-    if (hist.length < 2) {
-      el.innerHTML = '<div style="height:88px;display:flex;align-items:center;justify-content:center;opacity:0.3;font-size:11px">Chart builds as data arrives…</div>';
+    const today = new Date().toISOString().slice(0, 10);
+    let series = null;
+    try { const c = JSON.parse(localStorage.getItem('ml_gold_trend') || 'null'); if (c && c.day === today && c.pts && c.pts.length >= 6) series = c.pts; } catch {}
+    if (!series) {
+      const dates = [];
+      for (let i = 33; i >= 0; i -= 3) { const d = new Date(); d.setDate(d.getDate() - i); dates.push(d.toISOString().slice(0, 10)); }
+      const res = await Promise.all(dates.map(dt =>
+        fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${dt}/v1/currencies/xau.json`)
+          .then(r => r.ok ? r.json() : null).then(j => (j && j.xau && j.xau.usd) || null).catch(() => null)));
+      series = res.filter(v => typeof v === 'number');
+      if (series.length >= 6) localStorage.setItem('ml_gold_trend', JSON.stringify({ day: today, pts: series }));
+    }
+    if (!series || series.length < 2) {
+      el.innerHTML = '<div style="height:88px;display:flex;align-items:center;justify-content:center;opacity:0.3;font-size:11px">近 30 日趋势加载中…</div>';
       return;
     }
     const sb = window.CL.supabase;
-    const { data: pulses } = await sb
-      .from('metal_pulses')
-      .select('sentiment_score, sentiment')
-      .order('created_at', { ascending: false })
-      .limit(12);
-
+    const { data: pulses } = await sb.from('metal_pulses').select('sentiment_score, sentiment').order('created_at', { ascending: false }).limit(12);
     const COLOR = { bullish:'#00c896', bearish:'#ff4757', neutral:'#ffd32a', mixed:'#a29bfe' };
     const band = pulses?.length ? '<div class="sent-band">' +
       [...pulses].reverse().map(p => {
@@ -413,12 +420,10 @@ async function loadHourlyChart() {
         const op = Math.min(0.4 + Math.abs(p.sentiment_score || 0) / 100 * 0.6, 1.0).toFixed(2);
         return `<div class="sb-seg" style="background:${c};opacity:${op}"></div>`;
       }).join('') + '</div>' : '';
-
-    const span = hist.length < 20 ? `${hist.length * 15}s` : hist.length < 240 ? `${Math.round(hist.length / 4)}m` : '1h';
-    el.innerHTML = renderHourlyChart(hist) + band +
-      `<div class="chart-foot"><span>${span} ago</span><span style="color:rgba(255,255,255,0.1)">▓ sentiment</span><span>now</span></div>`;
+    el.innerHTML = renderHourlyChart(series) + band +
+      `<div class="chart-foot"><span>30 天前</span><span style="color:rgba(201,168,76,0.3)">XAU/USD · 日线</span><span>今日</span></div>`;
   } catch (e) {
-    console.warn('[loadHourlyChart]', e.message);
+    console.warn('[gold trend]', e.message);
   }
 }
 
@@ -446,8 +451,8 @@ function updateGoldPrice(price, pct) {
 function setLiveStatus() {
   const ring  = document.getElementById('live-ring');
   const label = document.getElementById('live-status');
-  if (ring)  ring.style.background = 'rgba(201,168,76,0.6)';
-  if (label) label.textContent = t('liveLabel');
+  if (ring)  { ring.style.background = 'rgba(201,168,76,0.6)'; ring.style.animation = 'none'; }
+  if (label) label.textContent = 'XAU/USD · 每日 Daily';
 }
 
 function initGoldPricePoll() {
