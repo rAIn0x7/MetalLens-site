@@ -1218,8 +1218,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   .card, .nav-filter, .btn, .tag { transform: none !important; }
 }
 
-/* ── MOBILE NAV FIX (contain overflow; filters = scroll-strip) ── */
-@media (max-width: 760px){
+/* ── MOBILE NAV FIX (contain overflow; filters = scroll-strip) ──
+   900px (not 760): single-row nav clips Sign In/Subscribe between 761-900px */
+@media (max-width: 900px){
   .nav{flex-wrap:wrap; height:auto; padding:10px 16px; gap:8px}
   .nav-logo{order:0; margin-right:auto}
   .nav-actions{order:1; margin-left:0; gap:6px; flex-wrap:wrap; justify-content:flex-end}

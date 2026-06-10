@@ -10,7 +10,7 @@ window.CL.affiliate = {
 
 (function () {
   const btn = document.createElement('a');
-  btn.href = 'https://www.bsmkweb.cc/register?ref=1216493484';
+  btn.href = 'https://accounts.binance.com/register?ref=1216493484';
   btn.target = '_blank';
   btn.rel = 'noopener';
   btn.onclick = () => window.CL.affiliate.track('binance', null);

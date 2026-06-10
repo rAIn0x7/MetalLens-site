@@ -175,9 +175,15 @@ async function loadTodaysTop() {
   if (!data?.length) {
     ({ data } = await sb.from('metal_articles').select('*').order('importance_score', { ascending: false }).limit(4));
   }
+  // Honest freshness: stamp the NEWEST article's date, not today's
   const dateEl = document.getElementById('brief-date');
-  if (dateEl) dateEl.textContent = new Date().toLocaleDateString(
-    getLang() === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  if (dateEl) {
+    const newest = data?.length
+      ? new Date(Math.max(...data.map(a => +new Date(a.published_at || a.created_at))))
+      : new Date();
+    dateEl.textContent = newest.toLocaleDateString(
+      getLang() === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
   const container = document.getElementById('top-grid');
   if (!container) return;
   if (!data?.length) { container.closest('.brief-section')?.classList.add('hidden'); return; }
@@ -535,8 +541,10 @@ window.initGoldPricePoll = initGoldPricePoll;
 
 /* ── METALS PRICE SNAPSHOT (ETF proxies — Finnhub free tier) ── */
 const SNAPSHOT_SYMS = ['GLD','SLV','USO','PPLT','CPER'];
-const SNAPSHOT_DISPLAY = { 'GLD':'XAU', 'SLV':'XAG', 'USO':'OIL', 'PPLT':'XPT', 'CPER':'XCU' };
-const SNAPSHOT_META    = { 'GLD':'Gold', 'SLV':'Silver', 'USO':'Brent', 'PPLT':'Platinum', 'CPER':'Copper' };
+// Honest labels: these are ETF proxy prices (Finnhub free tier), NOT spot —
+// showing GLD's $390 as "XAU" next to a $4000+ spot hero price reads as a bug.
+const SNAPSHOT_DISPLAY = { 'GLD':'GLD', 'SLV':'SLV', 'USO':'USO', 'PPLT':'PPLT', 'CPER':'CPER' };
+const SNAPSHOT_META    = { 'GLD':'Gold ETF', 'SLV':'Silver ETF', 'USO':'Oil ETF', 'PPLT':'Platinum ETF', 'CPER':'Copper ETF' };
 let _priceSnapshotTimer = null;
 const _SNAP_HIST_KEY = 'ml_snap_hist';
 const _SNAP_HIST_MAX = 30;
