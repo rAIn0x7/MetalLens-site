@@ -10,6 +10,7 @@
   --purple:    #7c3aed;
   --white:     #e8eaf0;
   --muted:     #6b7280;
+  --text-2:    #9aa3b2;
   --border:    rgba(201, 168, 76, 0.12);
   --border-hov:rgba(201, 168, 76, 0.28);
   --font-ui:   'Space Grotesk', sans-serif;
@@ -220,7 +221,7 @@ a { color: inherit; text-decoration: none; }
 
 .card-summary {
   font-size: 0.82rem;
-  color: var(--muted);
+  color: var(--text-2);
   line-height: 1.55;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -230,9 +231,12 @@ a { color: inherit; text-decoration: none; }
 
 .summary-zh {
   display: block;
-  margin-top: 0.3rem;
+  margin-top: 0.45rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border);
+  opacity: 0.92;
   color: var(--muted, #8892a4);
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   line-height: 1.5;
   font-family: 'Space Grotesk', sans-serif;
 }
@@ -469,7 +473,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .subscribe-page .sub-lead {
-  color: var(--muted);
+  color: var(--text-2);
   font-size: 0.9rem;
   margin-bottom: 2.5rem;
 }
@@ -520,7 +524,7 @@ a { color: inherit; text-decoration: none; }
 
 .plan-features li {
   font-size: 0.82rem;
-  color: var(--muted);
+  color: var(--text-2);
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -555,7 +559,7 @@ a { color: inherit; text-decoration: none; }
 .about-page { max-width: 680px; margin: 0 auto; padding: 3rem 2rem; }
 .about-page h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
 .about-page h2 { font-size: 1.1rem; font-weight: 600; margin: 2rem 0 0.75rem; }
-.about-page p { font-size: 0.9rem; color: var(--muted); line-height: 1.7; margin-bottom: 0.75rem; }
+.about-page p { font-size: 0.9rem; color: var(--text-2); line-height: 1.7; margin-bottom: 0.75rem; }
 .about-page a { color: var(--cyan); }
 
 /* ── FOOTER ── */
@@ -944,8 +948,8 @@ a { color: inherit; text-decoration: none; }
 }
 
 .chart-foot span {
-  font-size: 0.52rem;
-  color: rgba(255,255,255,0.16);
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.42);
   font-family: var(--font-mono);
 }
 
@@ -955,7 +959,7 @@ a { color: inherit; text-decoration: none; }
 .hist-label {
   font-size: 0.54rem;
   font-family: var(--font-mono);
-  color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.42);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-bottom: 4px;
@@ -981,8 +985,8 @@ a { color: inherit; text-decoration: none; }
 }
 
 .hist-dates span {
-  font-size: 0.52rem;
-  color: rgba(255,255,255,0.16);
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.42);
   font-family: var(--font-mono);
 }
 
@@ -1006,7 +1010,7 @@ a { color: inherit; text-decoration: none; }
   color: rgba(255,255,255,0.55);
 }
 
-.pr-name { font-size: 0.68rem; color: rgba(255,255,255,0.35); flex: 1; }
+.pr-name { font-size: 0.68rem; color: rgba(255,255,255,0.5); flex: 1; }
 
 .pr-price {
   font-family: var(--font-mono);
@@ -1221,6 +1225,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 /* ── MOBILE NAV FIX (contain overflow; filters = scroll-strip) ──
    900px (not 760): single-row nav clips Sign In/Subscribe between 761-900px */
 @media (max-width: 900px){
+.brief-h{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   .nav{flex-wrap:wrap; height:auto; padding:10px 16px; gap:8px}
   .nav-logo{order:0; margin-right:auto}
   .nav-actions{order:1; margin-left:0; gap:6px; flex-wrap:wrap; justify-content:flex-end}
