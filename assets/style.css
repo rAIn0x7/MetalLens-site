@@ -915,7 +915,7 @@ a { color: inherit; text-decoration: none; }
 
 .btc-big {
   font-family: var(--font-mono);
-  font-size: 1.9rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--white);
   transition: text-shadow 0.3s;
@@ -1230,7 +1230,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 /* ── MOBILE NAV FIX (contain overflow; filters = scroll-strip) ──
    900px (not 760): single-row nav clips Sign In/Subscribe between 761-900px */
 @media (max-width: 900px){
-.brief-h{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.brief .brief-h{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   .nav{flex-wrap:wrap; height:auto; padding:10px 16px; gap:8px}
   .nav-logo{order:0; margin-right:auto}
   .nav-actions{order:1; margin-left:0; gap:6px; flex-wrap:wrap; justify-content:flex-end}
